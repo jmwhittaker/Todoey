@@ -11,10 +11,15 @@ import UIKit
 class ToDoListViewController: UITableViewController {
     
     var itemArray = ["Get a job", "Buy Eggs", "Walk the cat"]
+    
+    let defaults = UserDefaults.standard
 
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
+        if let items = defaults.array(forKey: "ToDoListArray") as? [String] {
+            itemArray = items
+        }
     }
     
     
@@ -65,8 +70,13 @@ class ToDoListViewController: UITableViewController {
             
             self.itemArray.append(textField.text!)
             
+            self.defaults.set(self.itemArray, forKey: "ToDoListArray")
             self.tableView.reloadData()
             
+        }
+        
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel) { (action) in
+            alert.dismiss(animated: true, completion: nil)
         }
         
         alert.addTextField { (alertTextField) in
@@ -74,7 +84,9 @@ class ToDoListViewController: UITableViewController {
             textField = alertTextField
         }
         
+        alert.addAction(cancelAction)
         alert.addAction(action)
+        
         
         present(alert, animated: true, completion: nil)
     }

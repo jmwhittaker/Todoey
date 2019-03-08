@@ -13,9 +13,12 @@ class ToDoListViewController: UITableViewController {
     var itemArray = [Item]()
     
     let defaults = UserDefaults.standard
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        // load up item data
         
         let newItem = Item()
         newItem.title = "Find James"
@@ -25,13 +28,12 @@ class ToDoListViewController: UITableViewController {
         newItem2.title = "Find Bob"
         itemArray.append(newItem2)
         
-        if let items = defaults.array(forKey: "ToDoListArray") as? [Item] {
-            itemArray = items
-        }
+        loadItems()
     }
     
-    
+    //--------------------------------------------------------
     //MARK: - Tableview Datasource Methods
+    //--------------------------------------------------------
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return itemArray.count
@@ -50,11 +52,15 @@ class ToDoListViewController: UITableViewController {
         
     }
     
+    //--------------------------------------------------------
     //MARK: - Tableview Delegate Methods
+    //--------------------------------------------------------
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
+        
+        self.saveItems()
 
         tableView.reloadData()
 
@@ -66,28 +72,25 @@ class ToDoListViewController: UITableViewController {
         
     }
     
+    //--------------------------------------------------------
     //MARK: - Add new items
+    //--------------------------------------------------------
     
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
         
-        // local variable
         var textField = UITextField()
         
         let alert = UIAlertController(title: "Add new item", message: "", preferredStyle: .alert)
         
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
-            // What will happend once the User clicks the add item button on alert
+            
             print(textField.text!)
             
             let newItem = Item()
             newItem.title = textField.text!
             
             self.itemArray.append(newItem)
-
-            self.defaults.set(self.itemArray, forKey: "ToDoListArray")
-            
-            self.tableView.reloadData()
-            
+            self.saveItems()
         }
         
         let cancelAction = UIAlertAction(title: "Cancel", style: .cancel) { (action) in
@@ -105,6 +108,31 @@ class ToDoListViewController: UITableViewController {
         present(alert, animated: true, completion: nil)
     }
     
+    func saveItems() {
+        
+        let encoder = PropertyListEncoder()
+        do
+        {
+            let data = try encoder.encode(self.itemArray)
+            try data.write(to:self.dataFilePath!)
+        } catch {
+            print("Error eocoding")
+        }
+
+        self.tableView.reloadData()
+    }
     
+    func loadItems() {
+        if let data = try? Data(contentsOf: dataFilePath!) {
+            let decoder = PropertyListDecoder()
+            
+            do {
+                itemArray = try decoder.decode([Item].self, from: data)
+            } catch {
+                print("Error,  \(error)")
+            }
+            
+        }
+    }
 }
 

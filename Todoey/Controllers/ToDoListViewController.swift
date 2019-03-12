@@ -7,27 +7,19 @@
 //
 
 import UIKit
+import CoreData
 
 class ToDoListViewController: UITableViewController {
     
     var itemArray = [Item]()
     
     let defaults = UserDefaults.standard
-    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        // load up item data
-        
-        let newItem = Item()
-        newItem.title = "Find James"
-        itemArray.append(newItem)
-        
-        let newItem2 = Item()
-        newItem2.title = "Find Bob"
-        itemArray.append(newItem2)
-        
+//      print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
         loadItems()
     }
     
@@ -60,6 +52,10 @@ class ToDoListViewController: UITableViewController {
         
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
         
+//       // This order below matters!!!
+//        context.delete(itemArray[indexPath.row])
+//        itemArray.remove(at: indexPath.row)
+        
         self.saveItems()
 
         tableView.reloadData()
@@ -86,8 +82,10 @@ class ToDoListViewController: UITableViewController {
             
             print(textField.text!)
             
-            let newItem = Item()
+            // New NSManagedObject Title
+            let newItem = Item(context: self.context)
             newItem.title = textField.text!
+            newItem.done = false
             
             self.itemArray.append(newItem)
             self.saveItems()
@@ -110,28 +108,22 @@ class ToDoListViewController: UITableViewController {
     
     func saveItems() {
         
-        let encoder = PropertyListEncoder()
         do
         {
-            let data = try encoder.encode(self.itemArray)
-            try data.write(to:self.dataFilePath!)
+            try context.save()
         } catch {
-            print("Error eocoding")
+            print("Error saving context \(error)")
         }
 
         self.tableView.reloadData()
     }
     
     func loadItems() {
-        if let data = try? Data(contentsOf: dataFilePath!) {
-            let decoder = PropertyListDecoder()
-            
-            do {
-                itemArray = try decoder.decode([Item].self, from: data)
-            } catch {
-                print("Error,  \(error)")
-            }
-            
+        let request: NSFetchRequest<Item> = Item.fetchRequest()
+        do {
+            itemArray = try context.fetch(request)
+        } catch {
+            print("error fetching data from context \(error)")
         }
     }
 }
